@@ -1,33 +1,70 @@
-meas_id,meas_type,element_type,element,value,std_dev,side,name
-1,v,bus,1,1.0200,0.004,,V_CIRATA
-2,v,bus,2,1.0135,0.004,,V_CIBINONG
-3,v,bus,3,1.0098,0.004,,V_DEPOK
-4,v,bus,4,1.0071,0.004,,V_GANDUL
-5,v,bus,7,1.0055,0.004,,V_BEKASI
-6,v,bus,9,1.0040,0.004,,V_BOGOR
-7,p,bus,1,-155.20,1.50,,P_CIRATA
-8,q,bus,1,-32.40,1.50,,Q_CIRATA
-9,p,bus,2,10.50,1.50,,P_CIBINONG_INJ
-10,q,bus,2,3.20,1.50,,Q_CIBINONG_INJ
-11,p,bus,3,8.30,1.50,,P_DEPOK_INJ
-12,q,bus,3,2.10,1.50,,Q_DEPOK_INJ
-13,p,line,0,82.10,1.00,from,P_LINE1_FROM
-14,q,line,0,16.30,1.00,from,Q_LINE1_FROM
-15,p,line,0,80.55,1.00,to,P_LINE1_TO
-16,q,line,0,14.90,1.00,to,Q_LINE1_TO
-17,i,line,0,0.3145,0.005,from,I_LINE1_FROM
-18,p,line,1,45.60,1.00,from,P_LINE2_FROM
-19,q,line,1,9.80,1.00,from,Q_LINE2_FROM
-20,i,line,1,0.1780,0.005,from,I_LINE2_FROM
-21,p,line,2,18.20,1.00,from,P_LINE3_FROM
-22,q,line,2,3.90,1.00,from,Q_LINE3_FROM
-23,p,line,3,22.40,1.00,from,P_LINE4_FROM
-24,q,line,3,5.60,1.00,from,Q_LINE4_FROM
-25,p,line,4,12.80,1.00,from,P_LINE5_FROM
-26,q,line,4,2.70,1.00,from,Q_LINE5_FROM
-27,p,trafo,0,41.20,1.00,hv,P_T1_HV
-28,q,trafo,0,8.40,1.00,hv,Q_T1_HV
-29,p,trafo,1,68.90,1.00,hv,P_T2_HV
-30,q,trafo,1,14.20,1.00,hv,Q_T2_HV
-31,p,trafo,2,38.50,1.00,hv,P_T3_HV
-32,q,trafo,2,7.80,1.00,hv,Q_T3_HV
+# PLN State Estimation – SCADA Measurement Export
+# Format: Substation ; Voltage_kV ; Equipment ; Signal ; Timestamp ; Value ; Quality
+# Naming convention: IEC 61850  B1/B2/B3/Signal
+#   B1 = Substation code   (e.g. 0ADPL7 = Cirata)
+#   B2 = Voltage level kV  (e.g. 150, 500)
+#   B3 = Bay/Equipment     (e.g. 7KSGN1 = bay/feeder code)
+#   Signal: V (kV→p.u.) | P (MW) | Q (Mvar) | I (A→kA)
+# Quality flags: act=actual/valid  man=manual  sub=substitute  bad=bad/rejected
+#
+# Cirata 150 kV – Slack bus (B1=0ADCIR, B2=150, B3=BUSBAR)
+0ADCIR  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  153.00  ;  act
+0ADCIR  ; 150  ; BUSBAR  ; P  ; 06.03.2026 00:00  ; -155.20  ;  act
+0ADCIR  ; 150  ; BUSBAR  ; Q  ; 06.03.2026 00:00  ;  -32.40  ;  act
+#
+# Cirata → Cibinong feeder (B3=7KSGN1)
+0ADCIR  ; 150  ; 7KSGN1  ; P  ; 06.03.2026 00:00  ;   82.10  ;  act
+0ADCIR  ; 150  ; 7KSGN1  ; Q  ; 06.03.2026 00:00  ;   16.30  ;  act
+0ADCIR  ; 150  ; 7KSGN1  ; I  ; 06.03.2026 00:00  ;  314.50  ;  act
+#
+# Cibinong 150 kV bus
+0ADCBN  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  152.03  ;  act
+0ADCBN  ; 150  ; BUSBAR  ; P  ; 06.03.2026 00:00  ;   10.50  ;  act
+0ADCBN  ; 150  ; BUSBAR  ; Q  ; 06.03.2026 00:00  ;    3.20  ;  act
+#
+# Cibinong – receiving end of Cirata-Cibinong line
+0ADCBN  ; 150  ; 7KSGN1  ; P  ; 06.03.2026 00:00  ;   80.55  ;  act
+0ADCBN  ; 150  ; 7KSGN1  ; Q  ; 06.03.2026 00:00  ;   14.90  ;  act
+#
+# Cibinong → Depok feeder (B3=7KDPK1)
+0ADCBN  ; 150  ; 7KDPK1  ; P  ; 06.03.2026 00:00  ;   45.60  ;  act
+0ADCBN  ; 150  ; 7KDPK1  ; Q  ; 06.03.2026 00:00  ;    9.80  ;  act
+0ADCBN  ; 150  ; 7KDPK1  ; I  ; 06.03.2026 00:00  ;  178.00  ;  act
+#
+# Depok 150 kV bus
+0ADDPK  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  151.47  ;  act
+0ADDPK  ; 150  ; BUSBAR  ; P  ; 06.03.2026 00:00  ;    8.30  ;  act
+0ADDPK  ; 150  ; BUSBAR  ; Q  ; 06.03.2026 00:00  ;    2.10  ;  act
+#
+# Depok → Gandul feeder (B3=7KGND1)
+0ADDPK  ; 150  ; 7KGND1  ; P  ; 06.03.2026 00:00  ;   18.20  ;  act
+0ADDPK  ; 150  ; 7KGND1  ; Q  ; 06.03.2026 00:00  ;    3.90  ;  act
+#
+# Gandul 150 kV bus
+0ADGND  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  151.07  ;  act
+#
+# Cibinong → Bekasi feeder (B3=7KBKS1)
+0ADCBN  ; 150  ; 7KBKS1  ; P  ; 06.03.2026 00:00  ;   22.40  ;  act
+0ADCBN  ; 150  ; 7KBKS1  ; Q  ; 06.03.2026 00:00  ;    5.60  ;  act
+#
+# Bekasi 150 kV bus
+0ADBKS  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  150.83  ;  act
+#
+# Depok → Bogor feeder (B3=7KBGR1)
+0ADDPK  ; 150  ; 7KBGR1  ; P  ; 06.03.2026 00:00  ;   12.80  ;  act
+0ADDPK  ; 150  ; 7KBGR1  ; Q  ; 06.03.2026 00:00  ;    2.70  ;  act
+#
+# Bogor 150 kV bus
+0ADBGR  ; 150  ; BUSBAR  ; V  ; 06.03.2026 00:00  ;  150.60  ;  act
+#
+# Transformer measurements – Cibinong T1 HV side (B3=T1HV)
+0ADCBN  ; 150  ; T1HV    ; P  ; 06.03.2026 00:00  ;   41.20  ;  act
+0ADCBN  ; 150  ; T1HV    ; Q  ; 06.03.2026 00:00  ;    8.40  ;  act
+#
+# Transformer measurements – Depok T2 HV side (B3=T2HV)
+0ADDPK  ; 150  ; T2HV    ; P  ; 06.03.2026 00:00  ;   68.90  ;  act
+0ADDPK  ; 150  ; T2HV    ; Q  ; 06.03.2026 00:00  ;   14.20  ;  act
+#
+# Transformer measurements – Bekasi T3 HV side (B3=T3HV)
+0ADBKS  ; 150  ; T3HV    ; P  ; 06.03.2026 00:00  ;   38.50  ;  act
+0ADBKS  ; 150  ; T3HV    ; Q  ; 06.03.2026 00:00  ;    7.80  ;  act

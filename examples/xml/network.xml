@@ -85,39 +85,50 @@
     <Switch id="4" name="CB_DEPOK_T2"     bus="3" element="1" et="t" type="CB" closed="true"/>
   </Switches>
 
+  <!--
+    Measurements: names follow IEC 61850 B1/B2/B3/Signal convention.
+    Tag format: {Substation}/{VoltagekV}/{Equipment}/{Signal}
+      B1 = substation code  (e.g. 0ADCIR = Cirata)
+      B2 = voltage level kV (e.g. 150)
+      B3 = bay/equipment    (e.g. BUSBAR, 7KSGN1)
+      Signal = V | P | Q | I
+
+    For bus measurements, values are in p.u. (V) or MW/Mvar (P/Q).
+    For branch measurements, the 'side' attribute specifies 'from'/'to' or 'hv'/'lv'.
+  -->
   <Measurements>
-    <!-- Bus voltage measurements -->
-    <Measurement id="1"  meas_type="v" element_type="bus" element="1"  value="1.0200" std_dev="0.004" name="V_CIRATA"/>
-    <Measurement id="2"  meas_type="v" element_type="bus" element="2"  value="1.0135" std_dev="0.004" name="V_CIBINONG"/>
-    <Measurement id="3"  meas_type="v" element_type="bus" element="3"  value="1.0098" std_dev="0.004" name="V_DEPOK"/>
-    <Measurement id="4"  meas_type="v" element_type="bus" element="4"  value="1.0071" std_dev="0.004" name="V_GANDUL"/>
-    <Measurement id="5"  meas_type="v" element_type="bus" element="7"  value="1.0055" std_dev="0.004" name="V_BEKASI"/>
-    <Measurement id="6"  meas_type="v" element_type="bus" element="9"  value="1.0040" std_dev="0.004" name="V_BOGOR"/>
+    <!-- Bus voltage measurements (IEC 61850 tagged) -->
+    <Measurement id="1"  meas_type="v" element_type="bus" element="1"  value="1.0200" std_dev="0.004" name="0ADCIR/150kV/BUSBAR/V"/>
+    <Measurement id="2"  meas_type="v" element_type="bus" element="2"  value="1.0135" std_dev="0.004" name="0ADCBN/150kV/BUSBAR/V"/>
+    <Measurement id="3"  meas_type="v" element_type="bus" element="3"  value="1.0098" std_dev="0.004" name="0ADDPK/150kV/BUSBAR/V"/>
+    <Measurement id="4"  meas_type="v" element_type="bus" element="4"  value="1.0071" std_dev="0.004" name="0ADGND/150kV/BUSBAR/V"/>
+    <Measurement id="5"  meas_type="v" element_type="bus" element="7"  value="1.0055" std_dev="0.004" name="0ADBKS/150kV/BUSBAR/V"/>
+    <Measurement id="6"  meas_type="v" element_type="bus" element="9"  value="1.0040" std_dev="0.004" name="0ADBGR/150kV/BUSBAR/V"/>
 
     <!-- Bus power injections -->
-    <Measurement id="7"  meas_type="p" element_type="bus" element="1"  value="-155.20" std_dev="1.50" name="P_CIRATA"/>
-    <Measurement id="8"  meas_type="q" element_type="bus" element="1"  value="-32.40"  std_dev="1.50" name="Q_CIRATA"/>
-    <Measurement id="9"  meas_type="p" element_type="bus" element="2"  value="10.50"   std_dev="1.50" name="P_CIBINONG"/>
-    <Measurement id="10" meas_type="q" element_type="bus" element="2"  value="3.20"    std_dev="1.50" name="Q_CIBINONG"/>
+    <Measurement id="7"  meas_type="p" element_type="bus" element="1"  value="-155.20" std_dev="1.50" name="0ADCIR/150kV/BUSBAR/P"/>
+    <Measurement id="8"  meas_type="q" element_type="bus" element="1"  value="-32.40"  std_dev="1.50" name="0ADCIR/150kV/BUSBAR/Q"/>
+    <Measurement id="9"  meas_type="p" element_type="bus" element="2"  value="10.50"   std_dev="1.50" name="0ADCBN/150kV/BUSBAR/P"/>
+    <Measurement id="10" meas_type="q" element_type="bus" element="2"  value="3.20"    std_dev="1.50" name="0ADCBN/150kV/BUSBAR/Q"/>
 
-    <!-- Line flow measurements (element = 0-based line index) -->
-    <Measurement id="11" meas_type="p" element_type="line" element="0" value="82.10"  std_dev="1.00" side="from" name="P_L1_FROM"/>
-    <Measurement id="12" meas_type="q" element_type="line" element="0" value="16.30"  std_dev="1.00" side="from" name="Q_L1_FROM"/>
-    <Measurement id="13" meas_type="p" element_type="line" element="0" value="80.55"  std_dev="1.00" side="to"   name="P_L1_TO"/>
-    <Measurement id="14" meas_type="i" element_type="line" element="0" value="0.3145" std_dev="0.005" side="from" name="I_L1_FROM"/>
-    <Measurement id="15" meas_type="p" element_type="line" element="1" value="45.60"  std_dev="1.00" side="from" name="P_L2_FROM"/>
-    <Measurement id="16" meas_type="q" element_type="line" element="1" value="9.80"   std_dev="1.00" side="from" name="Q_L2_FROM"/>
-    <Measurement id="17" meas_type="i" element_type="line" element="1" value="0.1780" std_dev="0.005" side="from" name="I_L2_FROM"/>
-    <Measurement id="18" meas_type="p" element_type="line" element="2" value="18.20"  std_dev="1.00" side="from" name="P_L3_FROM"/>
-    <Measurement id="19" meas_type="p" element_type="line" element="3" value="22.40"  std_dev="1.00" side="from" name="P_L4_FROM"/>
-    <Measurement id="20" meas_type="p" element_type="line" element="4" value="12.80"  std_dev="1.00" side="from" name="P_L5_FROM"/>
+    <!-- Line flow measurements (IEC 61850 tagged, element = 0-based line index) -->
+    <Measurement id="11" meas_type="p" element_type="line" element="0" value="82.10"  std_dev="1.00" side="from" name="0ADCIR/150kV/7KSGN1/P"/>
+    <Measurement id="12" meas_type="q" element_type="line" element="0" value="16.30"  std_dev="1.00" side="from" name="0ADCIR/150kV/7KSGN1/Q"/>
+    <Measurement id="13" meas_type="p" element_type="line" element="0" value="80.55"  std_dev="1.00" side="to"   name="0ADCBN/150kV/7KSGN1/P"/>
+    <Measurement id="14" meas_type="i" element_type="line" element="0" value="0.3145" std_dev="0.005" side="from" name="0ADCIR/150kV/7KSGN1/I"/>
+    <Measurement id="15" meas_type="p" element_type="line" element="1" value="45.60"  std_dev="1.00" side="from" name="0ADCBN/150kV/7KDPK1/P"/>
+    <Measurement id="16" meas_type="q" element_type="line" element="1" value="9.80"   std_dev="1.00" side="from" name="0ADCBN/150kV/7KDPK1/Q"/>
+    <Measurement id="17" meas_type="i" element_type="line" element="1" value="0.1780" std_dev="0.005" side="from" name="0ADCBN/150kV/7KDPK1/I"/>
+    <Measurement id="18" meas_type="p" element_type="line" element="2" value="18.20"  std_dev="1.00" side="from" name="0ADDPK/150kV/7KGND1/P"/>
+    <Measurement id="19" meas_type="p" element_type="line" element="3" value="22.40"  std_dev="1.00" side="from" name="0ADCBN/150kV/7KBKS1/P"/>
+    <Measurement id="20" meas_type="p" element_type="line" element="4" value="12.80"  std_dev="1.00" side="from" name="0ADDPK/150kV/7KBGR1/P"/>
 
-    <!-- Transformer measurements (element = 0-based trafo index) -->
-    <Measurement id="21" meas_type="p" element_type="trafo" element="0" value="41.20" std_dev="1.00" side="hv" name="P_T1_HV"/>
-    <Measurement id="22" meas_type="q" element_type="trafo" element="0" value="8.40"  std_dev="1.00" side="hv" name="Q_T1_HV"/>
-    <Measurement id="23" meas_type="p" element_type="trafo" element="1" value="68.90" std_dev="1.00" side="hv" name="P_T2_HV"/>
-    <Measurement id="24" meas_type="q" element_type="trafo" element="1" value="14.20" std_dev="1.00" side="hv" name="Q_T2_HV"/>
-    <Measurement id="25" meas_type="p" element_type="trafo" element="2" value="38.50" std_dev="1.00" side="hv" name="P_T3_HV"/>
+    <!-- Transformer measurements (IEC 61850 tagged, element = 0-based trafo index) -->
+    <Measurement id="21" meas_type="p" element_type="trafo" element="0" value="41.20" std_dev="1.00" side="hv" name="0ADCBN/150kV/T1HV/P"/>
+    <Measurement id="22" meas_type="q" element_type="trafo" element="0" value="8.40"  std_dev="1.00" side="hv" name="0ADCBN/150kV/T1HV/Q"/>
+    <Measurement id="23" meas_type="p" element_type="trafo" element="1" value="68.90" std_dev="1.00" side="hv" name="0ADDPK/150kV/T2HV/P"/>
+    <Measurement id="24" meas_type="q" element_type="trafo" element="1" value="14.20" std_dev="1.00" side="hv" name="0ADDPK/150kV/T2HV/Q"/>
+    <Measurement id="25" meas_type="p" element_type="trafo" element="2" value="38.50" std_dev="1.00" side="hv" name="0ADBKS/150kV/T3HV/P"/>
   </Measurements>
 
 </PowerNetwork>

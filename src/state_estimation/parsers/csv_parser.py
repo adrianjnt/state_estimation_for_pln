@@ -6,9 +6,19 @@ Expected files (all optional except buses.csv and measurements.csv):
 
 The *source* argument to parse() should be a **directory** that contains
 those files, or a path to a single ZIP archive with the same structure.
+
+SCADA measurement format (IEC 61850):
+    measurements.csv may instead be a semicolon-delimited SCADA export
+    following the B1/B2/B3 hierarchy:
+        Substation ; Voltage_kV ; Equipment ; Signal ; Timestamp ; Value ; Quality
+
+    When detected automatically, a companion element_mapping.csv is loaded
+    from the same directory to link SCADA tags to network elements.
+    See scada_parser.py for full documentation.
 """
 from __future__ import annotations
 
+import logging
 import os
 import zipfile
 from pathlib import Path
@@ -17,6 +27,9 @@ from typing import Any
 import pandas as pd
 
 from .base_parser import BaseParser, NetworkData
+from .scada_parser import SCADAParser, ElementMapping, load_mapping_from_dir
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Column definitions – maps our canonical key → accepted CSV header aliases
@@ -168,8 +181,36 @@ def _coerce_types(records: list[dict], bool_keys: list[str], int_keys: list[str]
     return records
 
 
+def _is_scada_format(path: Path) -> bool:
+    """Heuristic: return True if the file looks like a SCADA semicolon export.
+
+    Checks the first non-blank, non-comment line for semicolon delimiters
+    and a signal token (V/P/Q/I) in the expected position.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                parts = [p.strip() for p in stripped.split(";")]
+                # Need at least 6 fields; field[3] should be V/P/Q/I
+                if len(parts) >= 6 and parts[3].upper() in {"V", "P", "Q", "I"}:
+                    return True
+                # If it looks like a regular CSV header, it's not SCADA
+                return False
+    except OSError:
+        pass
+    return False
+
+
 class CSVParser(BaseParser):
-    """Parse a directory (or ZIP) of CSV files into a NetworkData object."""
+    """Parse a directory (or ZIP) of CSV files into a NetworkData object.
+
+    Measurement files are accepted in two formats:
+    1. Standard CSV (comma-separated, with column headers)
+    2. SCADA semicolon export (IEC 61850 B1/B2/B3 hierarchy) – auto-detected
+    """
 
     def parse(self, source: str) -> NetworkData:
         source_path = Path(source)
@@ -188,7 +229,14 @@ class CSVParser(BaseParser):
                     return pd.read_csv(p, dtype=str, keep_default_na=False)
             return None
 
-        return self._build(read, directory.name)
+        # Locate the measurement file path for SCADA detection
+        meas_path: Path | None = None
+        for fname in ("measurements", "measurements.csv"):
+            for p in directory.glob(f"{fname}*.csv"):
+                meas_path = p
+                break
+
+        return self._build(read, directory.name, source_dir=directory, meas_path=meas_path)
 
     def _parse_zip(self, zpath: Path) -> NetworkData:
         with zipfile.ZipFile(zpath) as zf:
@@ -203,7 +251,13 @@ class CSVParser(BaseParser):
 
         return self._build(read, zpath.stem)
 
-    def _build(self, read_fn, network_name: str) -> NetworkData:
+    def _build(
+        self,
+        read_fn,
+        network_name: str,
+        source_dir: Path | None = None,
+        meas_path: Path | None = None,
+    ) -> NetworkData:
         nd = NetworkData(name=network_name)
 
         buses_df = read_fn("buses")
@@ -263,13 +317,31 @@ class CSVParser(BaseParser):
                 int_keys=["shunt_id", "bus"],
             )
 
-        meas_df = read_fn("measurements")
-        if meas_df is None:
-            raise FileNotFoundError("measurements.csv not found in source.")
-        nd.measurements = _coerce_types(
-            _normalise_df(meas_df, _MEAS_COLS),
-            bool_keys=[],
-            int_keys=["meas_id", "element"],
-        )
+        # --- Measurements: standard CSV or SCADA semicolon format ---
+        if meas_path is not None and _is_scada_format(meas_path):
+            logger.info(
+                "Detected IEC 61850 SCADA format in '%s'. Using SCADAParser.", meas_path.name
+            )
+            mapping: ElementMapping | None = None
+            if source_dir is not None:
+                mapping = load_mapping_from_dir(source_dir)
+                if mapping is None:
+                    logger.warning(
+                        "No element_mapping.csv found in '%s'. "
+                        "Measurements will default to bus/element=0. "
+                        "Create element_mapping.csv to fix element assignments.",
+                        source_dir,
+                    )
+            scada = SCADAParser()
+            nd.measurements = scada.parse_file(meas_path, mapping=mapping)
+        else:
+            meas_df = read_fn("measurements")
+            if meas_df is None:
+                raise FileNotFoundError("measurements.csv not found in source.")
+            nd.measurements = _coerce_types(
+                _normalise_df(meas_df, _MEAS_COLS),
+                bool_keys=[],
+                int_keys=["meas_id", "element"],
+            )
 
         return nd

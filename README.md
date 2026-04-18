@@ -15,6 +15,7 @@ A production-ready **Weighted Least Squares (WLS) State Estimator** for power tr
 | **WLS Algorithm** | Full Newton-Raphson WLS with configurable tolerance & iteration limit |
 | **Bad Data Detection** | χ² (Chi-squared) test + Normalised Residual iterative removal |
 | **Input formats** | CSV (directory or ZIP) · PLN custom XML · IEC 61970 CIM RDF/XML |
+| **IEC 61850 naming** | SCADA measurements auto-detected; B1/B2/B3 hierarchy parsed with unit conversion |
 | **Element types** | Buses · Lines · 2W/3W Transformers · Shunts · Switches · External Grids |
 | **Scalability** | Tested up to 10 000 nodes; uses pandapower sparse-matrix backend |
 | **Report** | Self-contained HTML report with convergence log, iteration chart, mismatch table, and linked CSV exports |
@@ -153,6 +154,79 @@ additional `mv_bus`, `sn_hv_mva`, `sn_mv_mva`, `sn_lv_mva`,
 
 #### `measurements.csv` *(required)*
 
+The measurement file is accepted in **two mutually exclusive formats**.
+The format is **auto-detected** — no flag is needed.
+
+---
+
+##### Format A — SCADA Semicolon Export (IEC 61850, recommended for live data)
+
+Follows the **B1 → B2 → B3 → Signal** hierarchy used by ABB/Siemens SCADA
+and substation automation systems compliant with IEC 61850:
+
+```
+# Substation ; Voltage_kV ; Equipment ; Signal ; Timestamp       ; Value   ; Quality
+0ADCIR       ; 150        ; BUSBAR    ; V      ; 06.03.2026 00:00 ; 153.00  ; act
+0ADCIR       ; 150        ; BUSBAR    ; P      ; 06.03.2026 00:00 ; -155.20 ; act
+0ADCIR       ; 150        ; 7KSGN1   ; I      ; 06.03.2026 00:00 ; 314.50  ; act
+```
+
+| Field | Description |
+|---|---|
+| **B1** – Substation | Station code (e.g. `0ADCIR` = Cirata) |
+| **B2** – Voltage kV | Nominal voltage of the bay (e.g. `150`, `500`) |
+| **B3** – Equipment | Bay or feeder code (e.g. `7KSGN1`, `BUSBAR`, `T1HV`) |
+| **Signal** | `V` · `P` · `Q` · `I` |
+| Timestamp | `DD.MM.YYYY HH:MM` or `YYYY-MM-DD HH:MM` |
+| Value | Raw SCADA value (**kV** for V, **A** for I, **MW** for P, **Mvar** for Q) |
+| Quality | `act` (valid) · `man` (manual) · `sub` (substitute) · `bad` (rejected) |
+
+**Automatic unit conversions applied:**
+
+| Signal | Input unit | Output unit | Formula |
+|---|---|---|---|
+| V | kV | p.u. | `V_pu = V_kV / B2_kV` |
+| I | A  | kA  | `I_kA = I_A / 1000` |
+| P | MW | MW  | no conversion |
+| Q | Mvar | Mvar | no conversion |
+
+**Canonical IEC 61850 tag** (used as measurement name in the report):
+
+```
+{B1}/{B2}kV/{B3}/{Signal}   →   0ADCIR/150kV/7KSGN1/I
+```
+
+**Element mapping file** — required alongside SCADA measurements:
+
+```
+element_mapping.csv
+```
+
+This file links each B1/B2/B3 combination to a pandapower element:
+
+| Column | Description |
+|---|---|
+| `b1` | Substation code |
+| `b2` | Voltage level string (must match exactly) |
+| `b3` | Bay/Equipment code |
+| `element_type` | `bus` · `line` · `trafo` · `trafo3w` |
+| `element_id` | `bus_id` for buses; 0-based row index for branches |
+| `side` | Blank for buses; `from`/`to` for lines; `hv`/`lv` for trafos |
+
+```csv
+b1,b2,b3,element_type,element_id,side
+0ADCIR,150,BUSBAR,bus,1,
+0ADCIR,150,7KSGN1,line,0,from
+0ADCBN,150,7KSGN1,line,0,to
+0ADCBN,150,T1HV,trafo,0,hv
+```
+
+If `element_mapping.csv` is absent, all measurements default to `bus/element=0` and a warning is printed.
+
+---
+
+##### Format B — Standard CSV (column-header format)
+
 | Column | Type | Description |
 |---|---|---|
 | `meas_id` | int | Unique measurement ID |
@@ -162,16 +236,13 @@ additional `mv_bus`, `sn_hv_mva`, `sn_mv_mva`, `sn_lv_mva`,
 | `value` | float | Measured value (p.u. for V; MW for P; Mvar for Q; kA for I) |
 | `std_dev` | float | Measurement standard deviation (same unit) |
 | `side` | str | Branch side: `from`/`to` for lines, `hv`/`lv` for trafos |
-| `name` | str | Optional label |
+| `name` | str | Recommended: use IEC 61850 tag `{B1}/{B2}kV/{B3}/{Signal}` |
 
 ```csv
 meas_id,meas_type,element_type,element,value,std_dev,side,name
-1,v,bus,1,1.020,0.004,,V_Bus1
-2,p,bus,1,-150.5,1.5,,P_Bus1
-3,q,bus,1,-30.2,1.5,,Q_Bus1
-4,p,line,0,80.1,1.0,from,P_Line1_from
-5,q,line,0,15.3,1.0,from,Q_Line1_from
-6,i,line,0,0.310,0.005,from,I_Line1
+1,v,bus,1,1.020,0.004,,0ADCIR/150kV/BUSBAR/V
+2,p,bus,1,-150.5,1.5,,0ADCIR/150kV/BUSBAR/P
+3,i,line,0,0.310,0.005,from,0ADCIR/150kV/7KSGN1/I
 ```
 
 ---

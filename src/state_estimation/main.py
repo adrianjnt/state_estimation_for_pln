@@ -137,11 +137,36 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     # Validation
-    errors = network_data.validate()
+    errors, warnings = network_data.validate()
+    for w in warnings:
+        logger.warning("Validation warning: %s", w)
     if errors:
         for e in errors:
             logger.error("Validation: %s", e)
         return 1
+
+    # IEC 61850 / SCADA metadata summary
+    scada_info = network_data.scada_summary()
+    if scada_info["is_scada"]:
+        logger.info(
+            "IEC 61850 SCADA input detected: %d substation(s) [%s], "
+            "voltage levels %s kV, %d equipment codes",
+            len(scada_info["substations"]),
+            ", ".join(scada_info["substations"]),
+            "/".join(str(int(v)) for v in scada_info["voltage_levels_kv"]),
+            len(scada_info["equipment_codes"]),
+        )
+        if scada_info["timestamps"]:
+            logger.info("Measurement timestamps: %s", " → ".join(
+                [scada_info["timestamps"][0], scada_info["timestamps"][-1]]
+                if len(scada_info["timestamps"]) > 1
+                else scada_info["timestamps"]
+            ))
+        if scada_info["suspect_measurements"]:
+            logger.warning(
+                "%d measurement(s) have suspect quality flags (accepted).",
+                scada_info["suspect_measurements"],
+            )
 
     network_name = args.network_name or network_data.name
     logger.info(
@@ -218,6 +243,7 @@ def run(args: argparse.Namespace) -> int:
         network_name=network_name,
         run_timestamp=ts,
         net_summary=net_summary,
+        scada_summary=scada_info,
     )
     logger.info("Report written to: %s", html_path.resolve())
 

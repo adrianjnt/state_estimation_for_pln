@@ -1,0 +1,53 @@
+# Element mapping: links IEC 61850 B1/B2/B3 SCADA tags to pandapower network elements.
+#
+# Columns:
+#   b1           – Substation code (matches B1 in measurements.csv)
+#   b2           – Voltage level as string (matches B2 in measurements.csv)
+#   b3           – Bay/Equipment code (matches B3 in measurements.csv)
+#   element_type – bus | line | trafo | trafo3w
+#   element_id   – bus_id for buses (from buses.csv);
+#                  0-based row index for branches (order in lines.csv / transformers.csv)
+#   side         – (blank for buses)
+#                  line: from | to
+#                  trafo: hv | lv
+#                  trafo3w: hv | mv | lv
+#
+# Bus measurements (BUSBAR tag maps to the HV bus at that substation)
+b1,b2,b3,element_type,element_id,side
+0ADCIR,150,BUSBAR,bus,1,
+0ADCBN,150,BUSBAR,bus,2,
+0ADDPK,150,BUSBAR,bus,3,
+0ADGND,150,BUSBAR,bus,4,
+0ADBKS,150,BUSBAR,bus,7,
+0ADBGR,150,BUSBAR,bus,9,
+#
+# Line measurements – feeder tags at sending/receiving end
+# Line 1: Cirata–Cibinong  (line index 0)
+0ADCIR,150,7KSGN1,line,0,from
+0ADCBN,150,7KSGN1,line,0,to
+#
+# Line 2: Cibinong–Depok  (line index 1)
+0ADCBN,150,7KDPK1,line,1,from
+0ADDPK,150,7KDPK1,line,1,to
+#
+# Line 3: Depok–Gandul  (line index 2)
+0ADDPK,150,7KGND1,line,2,from
+0ADGND,150,7KGND1,line,2,to
+#
+# Line 4: Cibinong–Bekasi  (line index 3)
+0ADCBN,150,7KBKS1,line,3,from
+0ADBKS,150,7KBKS1,line,3,to
+#
+# Line 5: Depok–Bogor  (line index 4)
+0ADDPK,150,7KBGR1,line,4,from
+0ADBGR,150,7KBGR1,line,4,to
+#
+# Transformer measurements
+# Trafo 1: Cibinong T1  (trafo index 0)
+0ADCBN,150,T1HV,trafo,0,hv
+#
+# Trafo 2: Depok T2  (trafo index 1)
+0ADDPK,150,T2HV,trafo,1,hv
+#
+# Trafo 3: Bekasi T3  (trafo index 2)
+0ADBKS,150,T3HV,trafo,2,hv
