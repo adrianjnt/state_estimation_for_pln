@@ -24,9 +24,17 @@ Unit conventions applied automatically:
     P  – input in MW  → kept as MW
     Q  – input in Mvar→ kept as Mvar
 
-Quality filter (configurable):
-    Accepted: act, ok, valid, man (manual – accepted with a warning flag)
-    Rejected: bad, fail, invalid, old, sub (substitute without accept flag)
+Quality flag definitions (PLN SCADA):
+    act  – actual      : paired with field metering, actively updating          → ACCEPTED
+    cal  – calculated  : derived from formulation of ≥1 measurements            → ACCEPTED
+    blo  – blocked     : field metering present but frozen/blocked              → REJECTED
+    not  – not renew   : field metering present but stopped updating            → REJECTED
+    exi  – exist       : not paired with field metering, no formula assigned    → REJECTED
+    inv  – invalid     : field metering present but returning an error message  → REJECTED
+    sub  – substitute  : operator has manually inserted a substitute value      → REJECTED
+
+    Only 'act' and 'cal' are used in state estimation. All other flags cause
+    the measurement to be dropped before the WLS solver is invoked.
 
 Element mapping:
     A companion CSV (element_mapping.csv) links each B1/B2/B3 tag to a
@@ -59,22 +67,33 @@ logger = logging.getLogger(__name__)
 # Quality classification
 # ---------------------------------------------------------------------------
 
-_QUALITY_ACCEPT = {"act", "ok", "valid", "man", "manual", "good", "1"}
-_QUALITY_WARN = {"man", "manual", "sub", "substitute", "est", "estimated"}
-_QUALITY_REJECT = {"bad", "fail", "invalid", "old", "blocked", "0", "err", "error"}
+# PLN SCADA quality flag definitions:
+#   act – actual      : field metering active and updating               → use
+#   cal – calculated  : derived from a measurement formula               → use
+#   blo – blocked     : field metering frozen/blocked                    → reject
+#   not – not renew   : field metering stopped updating                  → reject
+#   exi – exist       : tag exists but has no field source or formula    → reject
+#   inv – invalid     : field metering returning an error message        → reject
+#   sub – substitute  : operator-inserted substitute value               → reject
+
+_QUALITY_ACCEPT = {"act", "cal"}
+
+_QUALITY_REJECT = {"blo", "not", "exi", "inv", "sub"}
 
 
 def _classify_quality(raw: str) -> tuple[bool, bool]:
-    """Return (accepted, flagged_as_suspect)."""
+    """Return (accepted, flagged_as_suspect).
+
+    Only 'act' and 'cal' are accepted for state estimation.
+    Any unrecognised flag is rejected and flagged so the operator is informed.
+    """
     q = raw.strip().lower()
-    if q in _QUALITY_REJECT:
-        return False, True
-    if q in _QUALITY_WARN:
-        return True, True
     if q in _QUALITY_ACCEPT:
         return True, False
-    # Unknown quality → accept but flag
-    return True, True
+    if q in _QUALITY_REJECT:
+        return False, True
+    # Unknown flag – reject and flag; operator should investigate
+    return False, True
 
 
 # ---------------------------------------------------------------------------
@@ -242,6 +261,17 @@ def _convert_value(signal: str, raw: float, b2_kv: float) -> float:
 class SCADAParser:
     """Parse a SCADA semicolon-delimited measurement file.
 
+    Only measurements with quality flag 'act' (actual) or 'cal' (calculated)
+    are passed to the state estimator. All others are dropped:
+
+        act – actual      : field metering active and updating          → accepted
+        cal – calculated  : derived from ≥1 measurement formula         → accepted
+        blo – blocked     : metering frozen/blocked                     → rejected
+        not – not renew   : metering stopped updating                   → rejected
+        exi – exist       : tag has no field source or formula          → rejected
+        inv – invalid     : metering returning error message            → rejected
+        sub – substitute  : operator-inserted substitute value          → rejected
+
     Parameters
     ----------
     delimiter : str
@@ -249,7 +279,8 @@ class SCADAParser:
     encoding : str
         File encoding (default "utf-8"; try "latin-1" for ABB SCADA exports).
     reject_bad_quality : bool
-        If True (default), rows with bad quality flags are silently dropped.
+        If True (default), non-act/cal rows are dropped before SE.
+        Set to False only for diagnostics – SE results will be unreliable.
     std_dev_overrides : dict
         Override default σ values per signal type, e.g. {"v": 0.003, "p": 0.5}.
     """
@@ -331,12 +362,13 @@ class SCADAParser:
                 parse_errors += 1
                 continue
 
-            # Quality check
+            # Quality check – only 'act' and 'cal' are accepted
             accepted, suspect = _classify_quality(quality_raw)
             if not accepted and self.reject_bad_quality:
                 skipped_quality += 1
                 logger.debug(
-                    "Line %d: quality '%s' rejected for tag %s",
+                    "Line %d: quality '%s' rejected for tag %s "
+                    "(only 'act' and 'cal' are accepted for SE)",
                     lineno, quality_raw, build_iec61850_tag(b1, b2_raw, b3, signal_raw),
                 )
                 continue
@@ -363,7 +395,10 @@ class SCADAParser:
         )
         if skipped_quality:
             logger.warning(
-                "%d measurements were dropped due to bad quality flags.", skipped_quality
+                "%d measurement(s) dropped – quality flag was not 'act' or 'cal'. "
+                "Rejected flags: blo (blocked), not (not renew), exi (exist), "
+                "inv (invalid), sub (substitute).",
+                skipped_quality,
             )
         return rows
 

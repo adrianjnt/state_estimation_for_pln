@@ -179,7 +179,19 @@ and substation automation systems compliant with IEC 61850:
 | **Signal** | `V` · `P` · `Q` · `I` |
 | Timestamp | `DD.MM.YYYY HH:MM` or `YYYY-MM-DD HH:MM` |
 | Value | Raw SCADA value (**kV** for V, **A** for I, **MW** for P, **Mvar** for Q) |
-| Quality | `act` (valid) · `man` (manual) · `sub` (substitute) · `bad` (rejected) |
+| Quality | See table below |
+
+**Quality flag definitions (PLN SCADA):**
+
+| Flag | Meaning | Used in SE? |
+|---|---|---|
+| `act` | Actual – field metering active and updating | **Yes** |
+| `cal` | Calculated – derived from a measurement formula | **Yes** |
+| `blo` | Blocked – metering present but frozen/blocked | No – dropped |
+| `not` | Not renew – metering stopped updating | No – dropped |
+| `exi` | Exist – tag has no field source or formula assigned | No – dropped |
+| `inv` | Invalid – metering returning an error message | No – dropped |
+| `sub` | Substitute – operator-inserted substitute value | No – dropped |
 
 **Automatic unit conversions applied:**
 
