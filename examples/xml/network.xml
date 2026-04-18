@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PLN State Estimation – Custom XML Example
+  Network: JABAR 150 kV (simplified, 10-bus)
+
+  All impedances in Ohm/km, voltages in kV, power in MVA/MW/Mvar
+-->
+<PowerNetwork name="PLN_JABAR_150kV_Example">
+
+  <Buses>
+    <Bus id="1" name="CIRATA_150"   vn_kv="150" bus_type="3" zone="1" in_service="true"/>
+    <Bus id="2" name="CIBINONG_150" vn_kv="150" bus_type="1" zone="1" in_service="true"/>
+    <Bus id="3" name="DEPOK_150"    vn_kv="150" bus_type="1" zone="1" in_service="true"/>
+    <Bus id="4" name="GANDUL_150"   vn_kv="150" bus_type="1" zone="1" in_service="true"/>
+    <Bus id="5" name="CIBINONG_20"  vn_kv="20"  bus_type="1" zone="1" in_service="true"/>
+    <Bus id="6" name="DEPOK_20"     vn_kv="20"  bus_type="1" zone="1" in_service="true"/>
+    <Bus id="7" name="BEKASI_150"   vn_kv="150" bus_type="1" zone="2" in_service="true"/>
+    <Bus id="8" name="BEKASI_20"    vn_kv="20"  bus_type="1" zone="2" in_service="true"/>
+    <Bus id="9" name="BOGOR_150"    vn_kv="150" bus_type="1" zone="1" in_service="true"/>
+    <Bus id="10" name="BOGOR_20"    vn_kv="20"  bus_type="1" zone="1" in_service="true"/>
+  </Buses>
+
+  <ExtGrids>
+    <ExtGrid id="1" name="SLACK_CIRATA" bus="1" vm_pu="1.020" va_degree="0.0" in_service="true"/>
+  </ExtGrids>
+
+  <Lines>
+    <Line id="1" name="CIRATA-CIBINONG"
+          from_bus="1" to_bus="2"
+          length_km="45.0" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.645" parallel="1" in_service="true"/>
+    <Line id="2" name="CIBINONG-DEPOK"
+          from_bus="2" to_bus="3"
+          length_km="32.0" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.645" parallel="2" in_service="true"/>
+    <Line id="3" name="DEPOK-GANDUL"
+          from_bus="3" to_bus="4"
+          length_km="18.5" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.645" parallel="1" in_service="true"/>
+    <Line id="4" name="CIBINONG-BEKASI"
+          from_bus="2" to_bus="7"
+          length_km="40.0" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.500" parallel="1" in_service="true"/>
+    <Line id="5" name="DEPOK-BOGOR"
+          from_bus="3" to_bus="9"
+          length_km="28.0" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.500" parallel="1" in_service="true"/>
+    <Line id="6" name="GANDUL-BEKASI"
+          from_bus="4" to_bus="7"
+          length_km="22.0" r_ohm_per_km="0.0603" x_ohm_per_km="0.3511"
+          c_nf_per_km="8.50" max_i_ka="0.500" parallel="1" in_service="true"/>
+  </Lines>
+
+  <Transformers>
+    <Transformer id="1" name="T_CIBINONG_1"
+                 hv_bus="2" lv_bus="5"
+                 sn_mva="60" vn_hv_kv="150" vn_lv_kv="20"
+                 vk_percent="12.5" vkr_percent="0.35"
+                 pfe_kw="60" i0_percent="0.12"
+                 shift_degree="0" tap_pos="0" in_service="true"/>
+    <Transformer id="2" name="T_DEPOK_1"
+                 hv_bus="3" lv_bus="6"
+                 sn_mva="100" vn_hv_kv="150" vn_lv_kv="20"
+                 vk_percent="12.5" vkr_percent="0.35"
+                 pfe_kw="80" i0_percent="0.10"
+                 shift_degree="0" tap_pos="0" in_service="true"/>
+    <Transformer id="3" name="T_BEKASI_1"
+                 hv_bus="7" lv_bus="8"
+                 sn_mva="60" vn_hv_kv="150" vn_lv_kv="20"
+                 vk_percent="12.5" vkr_percent="0.35"
+                 pfe_kw="60" i0_percent="0.12"
+                 shift_degree="0" tap_pos="0" in_service="true"/>
+    <Transformer id="4" name="T_BOGOR_1"
+                 hv_bus="9" lv_bus="10"
+                 sn_mva="60" vn_hv_kv="150" vn_lv_kv="20"
+                 vk_percent="12.5" vkr_percent="0.35"
+                 pfe_kw="60" i0_percent="0.12"
+                 shift_degree="0" tap_pos="0" in_service="true"/>
+  </Transformers>
+
+  <Switches>
+    <Switch id="1" name="CB_CIRATA_L1"    bus="1" element="0" et="l" type="CB" closed="true"/>
+    <Switch id="2" name="CB_CIBINONG_L1"  bus="2" element="0" et="l" type="CB" closed="true"/>
+    <Switch id="3" name="CB_CIBINONG_T1"  bus="2" element="0" et="t" type="CB" closed="true"/>
+    <Switch id="4" name="CB_DEPOK_T2"     bus="3" element="1" et="t" type="CB" closed="true"/>
+  </Switches>
+
+  <Measurements>
+    <!-- Bus voltage measurements -->
+    <Measurement id="1"  meas_type="v" element_type="bus" element="1"  value="1.0200" std_dev="0.004" name="V_CIRATA"/>
+    <Measurement id="2"  meas_type="v" element_type="bus" element="2"  value="1.0135" std_dev="0.004" name="V_CIBINONG"/>
+    <Measurement id="3"  meas_type="v" element_type="bus" element="3"  value="1.0098" std_dev="0.004" name="V_DEPOK"/>
+    <Measurement id="4"  meas_type="v" element_type="bus" element="4"  value="1.0071" std_dev="0.004" name="V_GANDUL"/>
+    <Measurement id="5"  meas_type="v" element_type="bus" element="7"  value="1.0055" std_dev="0.004" name="V_BEKASI"/>
+    <Measurement id="6"  meas_type="v" element_type="bus" element="9"  value="1.0040" std_dev="0.004" name="V_BOGOR"/>
+
+    <!-- Bus power injections -->
+    <Measurement id="7"  meas_type="p" element_type="bus" element="1"  value="-155.20" std_dev="1.50" name="P_CIRATA"/>
+    <Measurement id="8"  meas_type="q" element_type="bus" element="1"  value="-32.40"  std_dev="1.50" name="Q_CIRATA"/>
+    <Measurement id="9"  meas_type="p" element_type="bus" element="2"  value="10.50"   std_dev="1.50" name="P_CIBINONG"/>
+    <Measurement id="10" meas_type="q" element_type="bus" element="2"  value="3.20"    std_dev="1.50" name="Q_CIBINONG"/>
+
+    <!-- Line flow measurements (element = 0-based line index) -->
+    <Measurement id="11" meas_type="p" element_type="line" element="0" value="82.10"  std_dev="1.00" side="from" name="P_L1_FROM"/>
+    <Measurement id="12" meas_type="q" element_type="line" element="0" value="16.30"  std_dev="1.00" side="from" name="Q_L1_FROM"/>
+    <Measurement id="13" meas_type="p" element_type="line" element="0" value="80.55"  std_dev="1.00" side="to"   name="P_L1_TO"/>
+    <Measurement id="14" meas_type="i" element_type="line" element="0" value="0.3145" std_dev="0.005" side="from" name="I_L1_FROM"/>
+    <Measurement id="15" meas_type="p" element_type="line" element="1" value="45.60"  std_dev="1.00" side="from" name="P_L2_FROM"/>
+    <Measurement id="16" meas_type="q" element_type="line" element="1" value="9.80"   std_dev="1.00" side="from" name="Q_L2_FROM"/>
+    <Measurement id="17" meas_type="i" element_type="line" element="1" value="0.1780" std_dev="0.005" side="from" name="I_L2_FROM"/>
+    <Measurement id="18" meas_type="p" element_type="line" element="2" value="18.20"  std_dev="1.00" side="from" name="P_L3_FROM"/>
+    <Measurement id="19" meas_type="p" element_type="line" element="3" value="22.40"  std_dev="1.00" side="from" name="P_L4_FROM"/>
+    <Measurement id="20" meas_type="p" element_type="line" element="4" value="12.80"  std_dev="1.00" side="from" name="P_L5_FROM"/>
+
+    <!-- Transformer measurements (element = 0-based trafo index) -->
+    <Measurement id="21" meas_type="p" element_type="trafo" element="0" value="41.20" std_dev="1.00" side="hv" name="P_T1_HV"/>
+    <Measurement id="22" meas_type="q" element_type="trafo" element="0" value="8.40"  std_dev="1.00" side="hv" name="Q_T1_HV"/>
+    <Measurement id="23" meas_type="p" element_type="trafo" element="1" value="68.90" std_dev="1.00" side="hv" name="P_T2_HV"/>
+    <Measurement id="24" meas_type="q" element_type="trafo" element="1" value="14.20" std_dev="1.00" side="hv" name="Q_T2_HV"/>
+    <Measurement id="25" meas_type="p" element_type="trafo" element="2" value="38.50" std_dev="1.00" side="hv" name="P_T3_HV"/>
+  </Measurements>
+
+</PowerNetwork>

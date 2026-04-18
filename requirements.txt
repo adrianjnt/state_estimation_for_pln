@@ -1,0 +1,23 @@
+# Core power system library
+pandapower>=2.13.0
+
+# Data manipulation (required by pandapower, pinned for large-network stability)
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Sparse matrix / numerical routines (pandapower dependency)
+scipy>=1.10.0
+
+# XML parsing (standard library ElementTree is sufficient;
+# lxml is optional but faster for large CIM files)
+lxml>=4.9.0
+
+# Network visualisation (optional – only used if plot functions are called)
+matplotlib>=3.7.0
+plotly>=5.14.0
+
+# Progress bars for large networks
+tqdm>=4.65.0
+
+# Type-checking support (runtime not required)
+# typing_extensions>=4.5.0

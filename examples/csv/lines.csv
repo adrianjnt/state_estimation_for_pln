@@ -1,0 +1,7 @@
+line_id,name,from_bus,to_bus,length_km,r_ohm_per_km,x_ohm_per_km,c_nf_per_km,max_i_ka,parallel,in_service
+1,CIRATA-CIBINONG,1,2,45.0,0.0603,0.3511,8.50,0.645,1,true
+2,CIBINONG-DEPOK,2,3,32.0,0.0603,0.3511,8.50,0.645,2,true
+3,DEPOK-GANDUL,3,4,18.5,0.0603,0.3511,8.50,0.645,1,true
+4,CIBINONG-BEKASI,2,7,40.0,0.0603,0.3511,8.50,0.500,1,true
+5,DEPOK-BOGOR,3,9,28.0,0.0603,0.3511,8.50,0.500,1,true
+6,GANDUL-BEKASI,4,7,22.0,0.0603,0.3511,8.50,0.500,1,true

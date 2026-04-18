@@ -1,0 +1,7 @@
+switch_id,name,bus,element,et,type,closed
+1,CB_CIRATA_L1,1,0,l,CB,true
+2,CB_CIBINONG_L1,2,0,l,CB,true
+3,CB_CIBINONG_L2,2,1,l,CB,true
+4,CB_DEPOK_L2,3,1,l,CB,true
+5,CB_CIBINONG_T1,2,0,t,CB,true
+6,CB_DEPOK_T2,3,1,t,CB,true

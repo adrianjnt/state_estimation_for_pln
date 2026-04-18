@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "state-estimation-for-pln"
+version = "1.0.0"
+description = "WLS State Estimator for power systems – built on pandapower"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Adrian Jonathan Yosua", email = "adrianjonathanyosua@gmail.com" }
+]
+keywords = ["state estimation", "power systems", "pandapower", "WLS", "PLN"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Electrical Engineering",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+  "pandapower>=2.13.0",
+  "pandas>=2.0.0",
+  "numpy>=1.24.0",
+  "scipy>=1.10.0",
+  "lxml>=4.9.0",
+  "matplotlib>=3.7.0",
+  "plotly>=5.14.0",
+  "tqdm>=4.65.0",
+]
+
+[project.scripts]
+se-pln = "state_estimation.main:main"
+
+[project.urls]
+Repository = "https://github.com/adrianjonathanyosua/state_estimation_for_pln"
+Issues = "https://github.com/adrianjonathanyosua/state_estimation_for_pln/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

@@ -1,0 +1,11 @@
+bus_id,name,vn_kv,bus_type,zone,in_service
+1,CIRATA_150,150,3,1,true
+2,CIBINONG_150,150,1,1,true
+3,DEPOK_150,150,1,1,true
+4,GANDUL_150,150,1,1,true
+5,CIBINONG_20,20,1,1,true
+6,DEPOK_20,20,1,1,true
+7,BEKASI_150,150,1,2,true
+8,BEKASI_20,20,1,2,true
+9,BOGOR_150,150,1,1,true
+10,BOGOR_20,20,1,1,true
