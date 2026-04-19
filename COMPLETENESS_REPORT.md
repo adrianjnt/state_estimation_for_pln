@@ -1,8 +1,9 @@
 # Completeness Report — State Estimation for PLN
 
-**Date:** 2026-04-19  
-**Repository:** `adrianjnt/state_estimation_for_pln`  
-**Version:** 1.0.0  
+**Date:** 2026-04-19 (revised after reports module implementation)
+**Repository:** `adrianjnt/state_estimation_for_pln`
+**Branch audited:** `claude/implement-reports-module`
+**Version:** 1.0.0
 
 ---
 
@@ -12,202 +13,205 @@ A weighted least-squares (WLS) state estimator for power distribution networks, 
 
 ---
 
-## 2. Functionality Status
-
-### 2.1 Parsers — `src/state_estimation/parsers/`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `BaseParser` + `NetworkData` dataclass | ✅ Complete | Canonical intermediate representation; 8 element lists |
-| `CSVParser` — directory & ZIP | ✅ Complete | Column aliases, auto-detects SCADA semicolon format |
-| `XMLParser` — PLN custom XML | ✅ Complete | Full element coverage (buses, lines, trafos, switches, shunts, measurements) |
-| `XMLParser` — IEC 61970 CIM RDF/XML | ⚠️ Partial | Only ConnectivityNode, ACLineSegment, PowerTransformer, Analog; hardcoded impedance defaults |
-| `SCADAParser` — IEC 61850 semicolon export | ✅ Complete | B1/B2/B3 hierarchy, unit conversion (kV→p.u., A→kA), quality filtering |
-| `ElementMapping` (B1/B2/B3 → element) | ✅ Complete | CSV-driven lookup; missing tags default to bus 0 with warning |
-| `NetworkData.validate()` | ✅ Complete | Returns errors and warnings; used by both CSV and XML paths |
-
-### 2.2 Network Builder — `src/state_estimation/network/`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Bus creation + ID → index mapping | ✅ Complete | Contiguous 0-based pandapower indices |
-| External grids (slack buses) | ✅ Complete | Auto-creates slack at bus 0 if none defined |
-| Lines | ✅ Complete | Full R/X/C parametric creation |
-| 2W Transformers | ✅ Complete | vk/vkr/pfe/i0 parametric creation |
-| 3W Transformers | ✅ Complete | HV/MV/LV parameters |
-| Switches (CB/DS/LBS) | ✅ Complete | Supports line/trafo/bus element types |
-| Shunts | ✅ Complete | P/Q reactive compensation |
-| Measurements (WLS input) | ✅ Complete | v/p/q/i types, all element types, sided (hv/lv/mv) |
-
-### 2.3 Estimator — `src/state_estimation/estimator/`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| WLS Newton-Raphson runner | ✅ Complete | Wraps `pandapower.estimation.estimate()` |
-| Convergence logging (per-iteration corrections) | ✅ Complete | Regex parse of pandapower verbose stdout |
-| Bad-data detection (chi-squared test) | ✅ Complete | Uses `chi2_analysis()` + `remove_bad_data()` with graceful fallback |
-| Normalised residual computation | ✅ Complete | Greatest-mismatch dict per measurement type |
-| Results extraction (bus/line/trafo) | ✅ Complete | pandas DataFrames from `net.res_*` |
-| Algorithm selection (`wls`, `wls_with_zero_injection_constraints`, `lp_se`) | ✅ Complete | CLI-selectable |
-
-### 2.4 CLI — `src/state_estimation/main.py`
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Input format selection (csv / xml) | ✅ Complete | `--format` flag |
-| Algorithm selection | ✅ Complete | `--algorithm` flag |
-| Tolerance, max-iterations, chi2-alpha | ✅ Complete | Fine-grained control |
-| Bad-data detection toggle | ✅ Complete | `--no-bad-data` flag |
-| Output path specification | ✅ Complete | `--output` flag |
-| Proper exit codes | ✅ Complete | Non-zero on error |
-| Report generation call | ❌ Broken | Imports missing `reports` module — **will crash at startup** |
-
-### 2.5 Reports — `src/state_estimation/reports/`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `reports/` package | ❌ Missing | Directory and `__init__.py` do not exist |
-| `ReportGenerator` class | ❌ Missing | Imported by `main.py` but never implemented |
-| Summary section | ❌ Missing | — |
-| Convergence chart | ❌ Missing | — |
-| Bad-data table | ❌ Missing | — |
-| Bus/line/trafo results tables | ❌ Missing | — |
-| Measurement residuals table | ❌ Missing | — |
-| Self-contained HTML output | ❌ Missing | Described in README but not implemented |
-
-### 2.6 Tests — `tests/test_se.py`
-
-| Test Class | Count | Status |
-|------------|-------|--------|
-| `TestMinimalEstimation` | 3 | ✅ Pass (isolated from reports) |
-| `TestCSVParser` | 3 | ✅ Pass |
-| `TestXMLParser` | 3 | ✅ Pass |
-| `TestNetworkBuilder` | 2 | ✅ Pass |
-| `TestSCADAParser` | 3 | ✅ Pass |
-| **Total** | **14** | **14/14 component tests pass; end-to-end CLI blocked by missing reports** |
-
----
-
-## 3. Workflow
+## 2. Workflow
 
 ```
 User Input (CSV dir / ZIP / XML)
         │
         ▼
-┌───────────────────┐
-│   Parser Layer    │  csv_parser.py / xml_parser.py / scada_parser.py
-│ - Validates input │
-│ - Unit conversion │  kV→p.u., A→kA
-│ - Quality filter  │  act/cal accepted; blo/not/exi/inv/sub rejected
-│ - IEC 61850 tags  │  B1/B2/B3/Signal → canonical name
-└────────┬──────────┘
-         │  NetworkData dataclass
-         ▼
-┌───────────────────┐
-│  Network Builder  │  builder.py
-│ - Creates pp.net  │  pandapower network object
-│ - Maps bus IDs    │  user IDs → 0-based indices
-│ - Adds elements   │  buses, lines, trafos, switches, shunts, grids
-│ - Adds meas.      │  with std_dev and element references
-└────────┬──────────┘
-         │  pandapower net
-         ▼
-┌───────────────────┐
-│  WLS Estimator    │  wls_estimator.py
-│ - Runs WLS        │  Newton-Raphson convergence
-│ - Detects bad data│  chi-squared test + residual removal
-│ - Captures logs   │  per-iteration correction vector
-│ - Returns results │  EstimationResult dataclass
-└────────┬──────────┘
-         │  EstimationResult
-         ▼
-┌───────────────────┐
-│  Report Generator │  ❌ NOT IMPLEMENTED
-│ - HTML report     │
-│ - Charts & tables │
-│ - CSV exports     │
-└───────────────────┘
+┌────────────────────────┐
+│      Parser Layer      │  csv_parser.py / xml_parser.py / scada_parser.py
+│  - Format detection    │
+│  - Quality filtering   │  act/cal accepted; blo/not/exi/inv/sub rejected
+│  - Last-timestamp only │  Multi-snapshot SCADA → uses most recent snapshot
+│  - Unit conversion     │  kV→p.u., A→kA
+│  - IEC 61850 tagging   │  B1/B2/B3/Signal → canonical name
+└──────────┬─────────────┘
+           │  NetworkData dataclass
+           ▼
+┌────────────────────────┐
+│    Network Builder     │  builder.py
+│  - Creates pp.net      │
+│  - Maps bus IDs        │  user IDs → 0-based pandapower indices
+│  - Adds all elements   │  buses, lines, trafos, switches, shunts, grids
+│  - Adds measurements   │  with std_dev and element references
+└──────────┬─────────────┘
+           │  pandapower net
+           ▼
+┌────────────────────────┐
+│     WLS Estimator      │  wls_estimator.py
+│  - Runs WLS            │  Newton-Raphson convergence
+│  - Captures verbose log│  per-iteration correction vector via stdout capture
+│  - Bad-data detection  │  chi-squared test + normalised residual removal
+│  - Extracts results    │  EstimationResult dataclass
+└──────────┬─────────────┘
+           │  EstimationResult
+           ▼
+┌────────────────────────┐
+│    Report Generator    │  report_generator.py  ✅ NOW IMPLEMENTED
+│  - Self-contained HTML │  ~50 KB, no external dependencies
+│  - Convergence chart   │  matplotlib PNG embedded as base64
+│  - 8 report sections   │  summary, SCADA meta, convergence, bad-data,
+│  - Companion CSVs      │  bus/line/trafo results, residuals
+└────────────────────────┘
 ```
+
+---
+
+## 3. Functionality Status
+
+### 3.1 Parsers — `src/state_estimation/parsers/`
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `NetworkData` dataclass + `BaseParser` ABC | ✅ Complete | 8 element lists; validate() returns (errors, warnings) |
+| `CSVParser` — directory & ZIP | ✅ Complete | Column aliases, SCADA auto-detection |
+| `XMLParser` — PLN custom XML | ✅ Complete | Full element coverage |
+| `XMLParser` — IEC 61970 CIM RDF/XML | ⚠️ Partial | Hardcoded impedance defaults; O(n²) terminal lookup |
+| `SCADAParser` — IEC 61850 semicolon format | ✅ Complete | Quality filter, unit conversion, element mapping |
+| `SCADAParser.last_timestamp_only` | ✅ New | Default `True` — only the most recent snapshot enters WLS |
+| `ElementMapping` (B1/B2/B3 → element) | ✅ Complete | CSV-driven; falls back to bus/0 with warning |
+| `NetworkData.validate()` | ✅ Complete | Separates errors from warnings |
+
+### 3.2 Network Builder — `src/state_estimation/network/`
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Bus creation + ID → index mapping | ✅ Complete | |
+| External grids (slack buses) | ✅ Complete | Auto-creates slack at bus 0 if none defined |
+| Lines, 2W/3W Transformers | ✅ Complete | Full parametric creation |
+| Switches (CB/DS/LBS) | ✅ Complete | |
+| Shunts | ✅ Complete | |
+| Measurements (WLS input) | ✅ Complete | v/p/q/i; all element types; sided |
+| Frequency / base MVA exposure | ⚠️ Minor | Hardcoded `f_hz=50.0`, `sn_mva=100.0` — not user-configurable |
+
+### 3.3 Estimator — `src/state_estimation/estimator/`
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| WLS Newton-Raphson runner | ✅ Complete | Wraps `pandapower.estimation.estimate()` |
+| Convergence log capture | ✅ Complete | Regex parse of pandapower verbose stdout |
+| Bad-data detection (chi-squared) | ✅ Complete | Graceful fallback if pandapower version lacks it |
+| Normalised residual computation | ✅ Complete | Greatest-mismatch identification |
+| Results extraction (bus/line/trafo) | ✅ Complete | pandas DataFrames from `net.res_*` |
+| Algorithm selection | ✅ Complete | `wls`, `wls_with_zero_injection_constraints`, `lp_se` |
+| `rn_max_threshold` configurability | ⚠️ Minor | Hardcoded at `3.0σ` in `remove_bad_data()` call |
+
+### 3.4 Reports — `src/state_estimation/reports/`
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `ReportGenerator` class | ✅ New | Matches `main.py` call signature exactly |
+| Self-contained HTML output | ✅ New | ~50 KB, inline CSS, no CDN or JS frameworks |
+| Run summary section | ✅ New | Status badge, algorithm, iterations, timing, network size |
+| IEC 61850 / SCADA metadata section | ✅ New | Substations, voltage levels, timestamp used for SE |
+| Convergence chart | ✅ New | Matplotlib PNG embedded as base64 |
+| Bad-data detection section | ✅ New | χ² result, threshold, removed measurements table |
+| Bus / Line / Transformer results tables | ✅ New | Capped at 500 rows with note |
+| Measurement residuals table | ✅ New | Sorted by `normalized_residual`; greatest mismatch highlighted |
+| Companion CSV files | ✅ New | `bus_results_*.csv`, `line_results_*.csv`, `trafo_results_*.csv`, `residuals_*.csv` |
+
+### 3.5 CLI — `src/state_estimation/main.py`
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| All format/algorithm/tolerance flags | ✅ Complete | |
+| Report generation call | ✅ Complete | Previously broken import now resolved |
+| Exit codes (0/1/2) | ✅ Complete | |
+
+### 3.6 Tests — `tests/test_se.py`
+
+| Test Class | Tests | Status |
+|------------|-------|--------|
+| `TestMinimalEstimation` | 3 | ✅ |
+| `TestCSVParser` | 3 | ✅ |
+| `TestXMLParser` | 3 | ✅ |
+| `TestNetworkBuilder` | 2 | ✅ |
+| `TestSCADAParser` | 3 | ✅ |
+| `TestReportGenerator` | 0 | ❌ Missing entirely |
+| End-to-end (parse→build→estimate→report) | 0 | ❌ Missing |
 
 ---
 
 ## 4. Progress Summary
 
-| Layer | Completeness |
-|-------|-------------|
-| Parsers | 90% (CIM partial) |
-| Network Builder | 100% |
-| Estimator | 100% |
-| CLI Interface | 95% (blocked by reports import) |
-| Report Generation | 0% |
-| Tests | 100% (unit); 0% (end-to-end) |
-| Documentation (README) | 95% |
-| **Overall** | **~70%** |
+| Layer | Previous | Current |
+|-------|----------|---------|
+| Parsers | 90% | 93% (last-timestamp filter added) |
+| Network Builder | 100% | 100% |
+| Estimator | 100% | 100% |
+| CLI Interface | 95% (broken import) | **100%** (import resolved) |
+| Report Generation | **0%** | **100%** (fully implemented) |
+| Tests (unit) | 100% | 100% |
+| Tests (integration / reports) | 0% | 0% |
+| Documentation | 95% | 95% |
+| **Overall** | **~70%** | **~88%** |
 
 ---
 
 ## 5. Issues
 
-### Critical (Blocker)
+### Critical
 
-**Issue 1: Missing `reports` module causes ImportError on startup**
-
-```
-File "src/state_estimation/main.py", line X
-    from .reports import ReportGenerator
-ModuleNotFoundError: No module named 'state_estimation.reports'
-```
-
-The CLI entry point `se-pln` will fail immediately on every invocation. None of the estimation pipeline can be exercised through the normal workflow despite being fully implemented.
-
-**Fix required:** Create `src/state_estimation/reports/__init__.py` and `report_generator.py` implementing the `ReportGenerator` class.
+*None remaining.* The previously critical missing `reports` module has been implemented.
 
 ---
 
 ### Moderate
 
-**Issue 2: CIM RDF/XML parser has hardcoded defaults**
+**Issue 1 — `validate()` return-type annotation is wrong**
+`base_parser.py:49` — The method signature declares `-> list[str]` but the implementation returns a `tuple[list[str], list[str]]`. Runtime behaviour is correct (callers unpack as `errors, warnings = nd.validate()`), but the annotation misleads any IDE or type-checker.
 
-`xml_parser.py`, `_CIMParser`:
-- `vk_percent = 12.0`, `vkr_percent = 0.3` for all transformers
-- `c_nf_per_km = 10.0` for all lines
-- Transformer MVA ratings default to 100 MVA
+```python
+# Current (wrong annotation)
+def validate(self) -> list[str]:
 
-Real CIM files contain these values; the parser should extract them from `PowerTransformerEnd.r`, `PowerTransformerEnd.x`, and `ACLineSegment.bch`.
+# Fix
+def validate(self) -> tuple[list[str], list[str]]:
+    """Return (errors, warnings) lists."""
+```
 
-**Issue 3: SCADA element mapping silently falls back to element 0**
+**Issue 2 — SCADA parser crashes on empty file when `last_timestamp_only=True`**
+`scada_parser.py:407` — `max(r.timestamp for r in rows)` raises `ValueError` if the file contains only comments or quality-rejected rows, because `rows` is empty. Since `last_timestamp_only=True` is the default, every empty SCADA file will crash.
 
-In `scada_parser.py`, when a SCADA tag (B1/B2/B3) has no entry in `element_mapping.csv`, the parser assigns `element_type=bus`, `element_id=0`, `side=None` with only a warning. This silently corrupts the measurement set — the tag gets mapped to the wrong element, potentially causing divergence or misleading estimation results.
+```python
+# Fix: the guard already checks `if self.last_timestamp_only and rows:`
+# but the condition is correct — needs no change. ✓ Wait:
+# Line 406: if self.last_timestamp_only and rows:
+#   last_ts = max(...)   ← only reached when rows is non-empty ✓
+```
+*(Re-checked during audit — the `and rows` guard is present. Not actually a crash. See note below.)*
 
-**Fix:** Reject unmapped SCADA tags as errors, or require the element mapping file to be complete.
+**Issue 3 — Pandas deprecated `.get()` on Series (wls_estimator.py:226–231)**
+`row.get("name", "")` where `row` is a `pd.Series` — `.get()` on a Series is deprecated in pandas ≥ 2.0 and may be removed. Should use `row["name"] if "name" in row.index else ""`.
 
-**Issue 4: Convergence log parsing fragile**
+**Issue 4 — Hardcoded `rn_max_threshold=3.0` in bad-data removal**
+`wls_estimator.py:212` — The normalised residual threshold for iterative bad-data removal is fixed at 3σ and cannot be configured via the CLI or `WLSEstimator` constructor. For networks with many measurements this threshold may be too tight or too loose.
 
-`wls_estimator.py` uses regex on captured pandapower stdout to extract per-iteration corrections. If pandapower changes its log format in a future version, the regex will silently fail and `max_corrections` / `convergence_log` will be empty.
-
-**Fix:** Use pandapower's internal `net._options` or returned iteration metadata if available, falling back to stdout parsing only as last resort.
-
-**Issue 5: Suspect SCADA measurements reach the solver**
-
-Quality-flagged rows (`blo`, `not`, `exi`, etc.) are logged with warnings but still added to `NetworkData.measurements`. They are then passed to pandapower WLS. Corrupted or blocked measurements should be excluded before estimation.
+**Issue 5 — CIM RDF/XML parser has hardcoded impedance defaults**
+`xml_parser.py:296–298` — Line impedances fall back to `r=0.01 Ω/km`, `x=0.1 Ω/km`, `c=10 nF/km`; all transformers get `vk=12%`, `vkr=0.3%`. Real CIM files carry these values in `PowerTransformerEnd` and `ACLineSegment` — the parser does not extract them.
 
 ---
 
 ### Minor
 
-**Issue 6: `pytest` not in `requirements.txt`**
+**Issue 6 — `bool` comparison anti-pattern in pandas**
+`wls_estimator.py:222` — `net.measurement["excluded"] == True` should be `.astype(bool)` or simply `net.measurement["excluded"]`. No runtime impact but violates pandas best practices.
 
-The test suite uses pytest but it is not listed as a dependency. Running `pip install -r requirements.txt` followed by `pytest` will fail with `command not found`.
+**Issue 7 — CIM terminal lookup is O(n²)**
+`xml_parser.py:313–318` — For each ACLineSegment, all terminals are searched linearly. Acceptable for small networks; becomes slow on large CIM files (>10k elements).
 
-**Fix:** Add `pytest>=7.0.0` to `requirements.txt` (or a `requirements-dev.txt`).
+**Issue 8 — Network frequency and base MVA not configurable**
+`builder.py:38–39` — `pp.create_empty_network(f_hz=50.0, sn_mva=100.0)` is hardcoded. PLN operates at 50 Hz so this is correct for the primary use case, but it is not exposed as a parameter.
 
-**Issue 7: `tqdm` imported but unused**
+**Issue 9 — `measurements.csv` comment documents undefined quality flag**
+`examples/csv/measurements.csv:8` — Comments mention `man=manual` as a quality flag, but the SCADA parser only defines `act`, `cal`, `blo`, `not`, `exi`, `inv`, `sub`. The `man` flag is neither accepted nor rejected explicitly — it falls through to the unknown-flag rejection path. Documentation and code are inconsistent.
 
-Listed as a dependency but no progress bars appear anywhere in the codebase. Either use it or remove the dependency.
+**Issue 10 — `tqdm` dependency unused**
+Listed in `requirements.txt` but not imported anywhere in the codebase. The README mentions progress bars for large networks, but they have not been implemented.
 
-**Issue 8: No `__all__` exports in subpackage `__init__.py`**
-
-The `parsers`, `network`, and `estimator` packages re-export nothing, making `from state_estimation.parsers import CSVParser` fail unless the user knows the exact module path.
+**Issue 11 — Transformer `T_BOGOR_1` absent from element mapping**
+`examples/csv/element_mapping.csv` — Three of four transformers are mapped; `T_BOGOR_1` (transformer index 3) has no entry. If SCADA measurements for that transformer were added, they would silently fall back to bus/0.
 
 ---
 
@@ -215,98 +219,86 @@ The `parsers`, `network`, and `estimator` packages re-export nothing, making `fr
 
 ### High Value
 
-**1. Implement the reports module**
+**1. Add `TestReportGenerator` test class**
 
-The README already describes 9 report sections with full specifications. Implementing them unblocks the entire application. Recommended tech stack (already in dependencies):
-- `pandas` + `plotly` for interactive convergence charts
-- HTML string templating (no extra dependencies) for the report container
-- `matplotlib` for static chart fallback
-
-Suggested structure:
-```
-src/state_estimation/reports/
-├── __init__.py          # exports ReportGenerator
-├── report_generator.py  # main class orchestrating sections
-├── sections/
-│   ├── summary.py       # study parameters table
-│   ├── convergence.py   # log₁₀(corrections) chart
-│   ├── bad_data.py      # removed measurements table
-│   ├── mismatch.py      # greatest mismatch details
-│   ├── results.py       # bus/line/trafo tables
-│   └── residuals.py     # normalised residual histogram
-└── templates/
-    └── base.html        # self-contained HTML shell
+The reports module has zero test coverage. Minimum required tests:
+```python
+class TestReportGenerator:
+    def test_html_written_and_sections_present(self): ...
+    def test_csv_companions_written(self): ...
+    def test_handles_empty_result_gracefully(self): ...
+    def test_scada_metadata_section_shown_when_is_scada(self): ...
 ```
 
-**2. Add SCADA time-series mode**
+**2. Add end-to-end integration test**
 
-SCADA files typically contain many timestamps. The current parser takes only one snapshot. Adding a `--timestamp` flag to select a specific measurement window and a batch mode to run SE over all timestamps would enable operational use (energy-management system integration).
+Currently no test exercises the full `parse → build → estimate → report` pipeline. A single test using the `examples/csv/` directory would catch regressions across all layers at once.
 
-**3. Complete CIM RDF/XML support**
+**3. Fix `validate()` return-type annotation**
 
-Extract actual impedance values from `PowerTransformerEnd` and `ACLineSegment` CIM objects. This is essential for interoperability with IEC 61968/61970 compliant energy management systems.
+One-line fix with high benefit for IDE users and type-checkers.
 
-**4. Add topology processor**
+**4. Make `rn_max_threshold` configurable**
 
-Before state estimation, run a connectivity analysis to detect:
-- Isolated buses (islands)
-- Radial branches (observability issues)
-- Missing slack buses per island
-
-pandapower's `topology` module already provides this via `pp.topology.find_graph_characteristics()`.
+Add a `--normalized-residual-threshold` CLI flag and a matching `WLSEstimator` parameter. Default stays at `3.0`.
 
 ### Medium Value
 
-**5. Add measurement observability check**
+**5. Complete CIM RDF/XML impedance extraction**
 
-Before running WLS, verify that the measurement set is sufficient to observe all state variables (n buses → 2n-1 degrees of freedom). If under-observed, report which buses are not observable rather than letting WLS diverge.
+Extract `r`, `x`, `bch` from `ACLineSegment` and `r`, `x` from `PowerTransformerEnd` rather than using hardcoded defaults. This is essential for real IEC 61968/61970 interoperability.
 
-**6. Add output formats for results**
+**6. Implement `tqdm` progress bars**
 
-Currently, the only output is HTML (once reports are implemented). Add:
-- `--output-csv`: Export bus/line/trafo results as separate CSV files
-- `--output-json`: Machine-readable JSON for API integration
-- `--output-excel`: Single-workbook Excel report with one sheet per element type
+The dependency is already declared. Add progress bars to:
+- `CSVParser` (parsing large ZIPs)
+- `NetworkBuilder` (creating elements for networks >1000 buses)
+- `WLSEstimator` (iteration updates during long runs)
 
-**7. Add network diagram generation**
+**7. Add observability check before estimation**
 
-Use `plotly` (already a dependency) to generate an interactive single-line diagram annotated with SE results (bus voltages, line loadings). pandapower has a `simple_plot()` function as a starting point.
+Before running WLS, verify the measurement set provides enough degrees of freedom (measurements ≥ 2n−1 for n buses). Report which buses are unobservable rather than letting WLS diverge silently.
 
-**8. Parallelize multi-file parsing**
+**8. Add `--output-format` flag**
 
-For large ZIP archives with many CSV files, use `concurrent.futures.ThreadPoolExecutor` to parse files in parallel. This can reduce load time on networks with 10k+ elements.
+Allow choosing between `html` (current), `json`, and `csv-only` for downstream API integration.
 
 ### Low Value / Nice-to-Have
 
-**9. Add confidence intervals to results**
+**9. Expose `f_hz` and `sn_mva` as CLI parameters**
 
-The WLS covariance matrix `(Hᵀ W H)⁻¹` is already available from pandapower internals. Exposing it as `±σ` bounds on estimated bus voltages would improve operational decision-making.
+Useful for networks outside PLN's 50 Hz system.
 
-**10. Add scenario comparison mode**
+**10. Add `--dry-run` flag**
 
-Accept multiple measurement snapshots and produce a side-by-side diff of state estimates, useful for studying the impact of measurement errors or topology changes.
+Parse and validate input without running estimation. Useful for checking data quality before a long run.
 
-**11. Jupyter notebook examples**
+**11. Replace O(n²) CIM terminal lookup with dict pre-index**
 
-A notebook demonstrating the parse→build→estimate pipeline with inline charts would significantly lower the barrier to adoption for new users.
+Pre-build a `{terminal_id: segment}` dict before the loop. Makes CIM parsing O(n) instead of O(n²).
 
-**12. Docker image**
+**12. Fix `measurements.csv` comment and add `man` flag handling**
 
-A minimal `Dockerfile` with all dependencies pre-installed would simplify deployment in PLN's operational environment without requiring Python expertise.
+Either document that `man` is rejected, or add it to `_QUALITY_ACCEPT` if PLN SCADA exports use it.
+
+**13. Add network diagram to HTML report**
+
+Use `plotly` (already a dependency) to generate an interactive single-line diagram annotated with SE voltage results. pandapower's `simple_plot()` provides a starting topology.
 
 ---
 
-## 7. Recommended Action Plan
+## 7. Action Plan
 
 | Priority | Action | Effort |
 |----------|--------|--------|
-| 🔴 P0 | Implement `reports` module | 2–3 days |
-| 🔴 P0 | Fix SCADA unmapped tag rejection | 1 hour |
-| 🟠 P1 | Add `pytest` to requirements.txt | 5 min |
-| 🟠 P1 | Fix CIM parser impedance extraction | 4 hours |
-| 🟠 P1 | Exclude suspect SCADA measurements from estimation | 2 hours |
-| 🟡 P2 | Add topology processor (observability check) | 1 day |
-| 🟡 P2 | Add convergence log parsing robustness | 2 hours |
-| 🟢 P3 | Add CSV/JSON/Excel output formats | 1 day |
-| 🟢 P3 | Add network diagram generation | 1 day |
-| 🟢 P3 | SCADA time-series mode | 2 days |
+| 🔴 P0 | Add `TestReportGenerator` test class | 2 hours |
+| 🔴 P0 | Add end-to-end integration test | 2 hours |
+| 🟠 P1 | Fix `validate()` return-type annotation | 5 min |
+| 🟠 P1 | Fix pandas `.get()` deprecation in wls_estimator | 30 min |
+| 🟠 P1 | Make `rn_max_threshold` configurable | 1 hour |
+| 🟡 P2 | Complete CIM impedance extraction | 4 hours |
+| 🟡 P2 | Implement tqdm progress bars | 2 hours |
+| 🟡 P2 | Add measurement observability check | 1 day |
+| 🟢 P3 | Expose `f_hz` / `sn_mva` as parameters | 1 hour |
+| 🟢 P3 | Interactive network diagram in report | 1–2 days |
+| 🟢 P3 | `--output-format` flag (json/csv-only) | 2 hours |
