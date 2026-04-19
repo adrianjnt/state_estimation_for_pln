@@ -36,9 +36,10 @@ Thumbs.db
 desktop.ini
 
 # Reports (generated output – do not commit large result files)
-reports/
-*.html
+/reports/
 results_*.csv
+# Exclude generated HTML but not source files
+/src/**/*.html
 
 # Jupyter
 .ipynb_checkpoints/

@@ -291,10 +291,12 @@ class SCADAParser:
         encoding: str = "utf-8",
         reject_bad_quality: bool = True,
         std_dev_overrides: dict[str, float] | None = None,
+        last_timestamp_only: bool = True,
     ) -> None:
         self.delimiter = delimiter
         self.encoding = encoding
         self.reject_bad_quality = reject_bad_quality
+        self.last_timestamp_only = last_timestamp_only
         self._std_dev = {**_DEFAULT_STD_DEV, **(std_dev_overrides or {})}
 
     # ------------------------------------------------------------------
@@ -400,6 +402,20 @@ class SCADAParser:
                 "inv (invalid), sub (substitute).",
                 skipped_quality,
             )
+
+        if self.last_timestamp_only and rows:
+            last_ts = max(r.timestamp for r in rows)
+            before = len(rows)
+            rows = [r for r in rows if r.timestamp == last_ts]
+            if len(rows) < before:
+                logger.info(
+                    "last_timestamp_only=True: retained %d of %d measurements "
+                    "from timestamp '%s' (dropped %d earlier snapshots).",
+                    len(rows), before, last_ts, before - len(rows),
+                )
+            else:
+                logger.info("Using timestamp '%s' (%d measurements).", last_ts, len(rows))
+
         return rows
 
     def _to_measurement_dicts(
