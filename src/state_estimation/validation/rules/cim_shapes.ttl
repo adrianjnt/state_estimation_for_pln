@@ -1,0 +1,630 @@
+# CIM SHACL Shapes — IEC 61970-301 / CGMES structural constraints
+#
+# These shapes are evaluated against an RDF graph serialised from the EQ and TP
+# profiles.  All shapes use severity sh:Violation unless otherwise noted.
+#
+# Namespaces:
+#   cim: http://iec.ch/TC57/CIM100#
+#   sh:  http://www.w3.org/ns/shacl#
+
+@prefix cim:  <http://iec.ch/TC57/CIM100#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+
+# ===========================================================================
+# 1.  IdentifiedObject — every CIM object must carry an mRID
+# ===========================================================================
+
+<#IdentifiedObjectShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:IdentifiedObject ;
+    sh:name "IdentifiedObjectShape" ;
+    sh:description "Every IdentifiedObject must have a non-empty mRID." ;
+
+    sh:property [
+        sh:path        cim:IdentifiedObject.mRID ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:datatype    xsd:string ;
+        sh:minLength   1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "IdentifiedObject.mRID is missing or empty." ;
+    ] .
+
+
+# ===========================================================================
+# 2.  Terminal — connectivity references
+# ===========================================================================
+
+<#TerminalShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:Terminal ;
+    sh:name "TerminalShape" ;
+    sh:description "A Terminal must reference exactly one ConnectivityNode and one ConductingEquipment." ;
+
+    # Must have exactly one ConnectivityNode reference
+    sh:property [
+        sh:path        cim:Terminal.ConnectivityNode ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "Terminal must reference exactly one ConnectivityNode." ;
+    ] ;
+
+    # Must have exactly one ConductingEquipment reference
+    sh:property [
+        sh:path        cim:Terminal.ConductingEquipment ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "Terminal must reference exactly one ConductingEquipment." ;
+    ] ;
+
+    # sequenceNumber must be a positive integer
+    sh:property [
+        sh:path        cim:ACDCTerminal.sequenceNumber ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:datatype    xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "Terminal.sequenceNumber must be a positive integer ≥ 1." ;
+    ] .
+
+
+# ===========================================================================
+# 3.  ConnectivityNode — must belong to a container
+# ===========================================================================
+
+<#ConnectivityNodeShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:ConnectivityNode ;
+    sh:name "ConnectivityNodeShape" ;
+
+    sh:property [
+        sh:path        cim:ConnectivityNode.ConnectivityNodeContainer ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "ConnectivityNode must reference exactly one ConnectivityNodeContainer." ;
+    ] .
+
+
+# ===========================================================================
+# 4.  VoltageLevel — must link to a Substation and BaseVoltage
+# ===========================================================================
+
+<#VoltageLevelShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:VoltageLevel ;
+    sh:name "VoltageLevelShape" ;
+
+    sh:property [
+        sh:path        cim:VoltageLevel.Substation ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "VoltageLevel must belong to exactly one Substation." ;
+    ] ;
+
+    sh:property [
+        sh:path        cim:VoltageLevel.BaseVoltage ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Warning ;
+        sh:message     "VoltageLevel should reference a BaseVoltage (nominal kV)." ;
+    ] .
+
+
+# ===========================================================================
+# 5.  BaseVoltage — nominalVoltage must be positive
+# ===========================================================================
+
+<#BaseVoltageShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:BaseVoltage ;
+    sh:name "BaseVoltageShape" ;
+
+    sh:property [
+        sh:path            cim:BaseVoltage.nominalVoltage ;
+        sh:minCount        1 ;
+        sh:maxCount        1 ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Violation ;
+        sh:message         "BaseVoltage.nominalVoltage must be a positive number." ;
+    ] .
+
+
+# ===========================================================================
+# 6.  PowerTransformerEnd — must link to transformer and terminal
+# ===========================================================================
+
+<#TransformerEndShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:PowerTransformerEnd ;
+    sh:name "TransformerEndShape" ;
+
+    sh:property [
+        sh:path        cim:PowerTransformerEnd.PowerTransformer ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "PowerTransformerEnd must reference exactly one PowerTransformer." ;
+    ] ;
+
+    sh:property [
+        sh:path        cim:TransformerEnd.Terminal ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "PowerTransformerEnd must reference exactly one Terminal." ;
+    ] ;
+
+    sh:property [
+        sh:path            cim:PowerTransformerEnd.ratedS ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Warning ;
+        sh:message         "PowerTransformerEnd.ratedS should be positive (MVA)." ;
+    ] ;
+
+    sh:property [
+        sh:path            cim:PowerTransformerEnd.ratedU ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Warning ;
+        sh:message         "PowerTransformerEnd.ratedU should be positive (kV)." ;
+    ] .
+
+
+# ===========================================================================
+# 7.  ACLineSegment — must have positive length and reactance
+# ===========================================================================
+
+<#ACLineSegmentShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:ACLineSegment ;
+    sh:name "ACLineSegmentShape" ;
+
+    sh:property [
+        sh:path            cim:Conductor.length ;
+        sh:minCount        1 ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Warning ;
+        sh:message         "ACLineSegment.length should be positive (km)." ;
+    ] ;
+
+    sh:property [
+        sh:path            cim:ACLineSegment.x ;
+        sh:minCount        1 ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Warning ;
+        sh:message         "ACLineSegment.x (reactance) should be positive." ;
+    ] .
+
+
+# ===========================================================================
+# 8.  Switch — open/normalOpen must be boolean
+# ===========================================================================
+
+<#SwitchShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:Switch ;
+    sh:name "SwitchShape" ;
+
+    sh:property [
+        sh:path        cim:Switch.open ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:datatype    xsd:boolean ;
+        sh:severity    sh:Violation ;
+        sh:message     "Switch.open must be present and boolean." ;
+    ] ;
+
+    sh:property [
+        sh:path        cim:Switch.normalOpen ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:datatype    xsd:boolean ;
+        sh:severity    sh:Warning ;
+        sh:message     "Switch.normalOpen should be present and boolean." ;
+    ] .
+
+
+# ===========================================================================
+# 9.  Analog — must link to Terminal or PowerSystemResource
+# ===========================================================================
+
+<#AnalogShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:Analog ;
+    sh:name "AnalogShape" ;
+
+    # At least one of Terminal or PowerSystemResource must be set
+    sh:or (
+        [
+            sh:property [
+                sh:path     cim:Measurement.Terminal ;
+                sh:minCount 1 ;
+            ]
+        ]
+        [
+            sh:property [
+                sh:path     cim:Measurement.PowerSystemResource ;
+                sh:minCount 1 ;
+            ]
+        ]
+    ) ;
+    sh:severity sh:Warning ;
+    sh:message  "Analog must be linked to a Terminal or PowerSystemResource." .
+
+
+# ===========================================================================
+# 10.  TopologicalIsland — must have an angle-reference node
+# ===========================================================================
+
+<#TopologicalIslandShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:TopologicalIsland ;
+    sh:name "TopologicalIslandShape" ;
+
+    sh:property [
+        sh:path        cim:TopologicalIsland.AngleRefTopologicalNode ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "TopologicalIsland must have exactly one angle-reference TopologicalNode." ;
+    ] ;
+
+    sh:property [
+        sh:path        cim:TopologicalIsland.TopologicalNodes ;
+        sh:minCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "TopologicalIsland must contain at least one TopologicalNode." ;
+    ] .
+
+
+# ===========================================================================
+# 11.  TopologicalNode — must have a BaseVoltage
+# ===========================================================================
+
+<#TopologicalNodeShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:TopologicalNode ;
+    sh:name "TopologicalNodeShape" ;
+
+    sh:property [
+        sh:path        cim:TopologicalNode.BaseVoltage ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Warning ;
+        sh:message     "TopologicalNode should reference a BaseVoltage." ;
+    ] .
+
+
+# ===========================================================================
+# 12.  SvVoltage — must reference a TopologicalNode, v > 0, angle finite
+# ===========================================================================
+
+<#SvVoltageShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:SvVoltage ;
+    sh:name "SvVoltageShape" ;
+
+    sh:property [
+        sh:path        cim:SvVoltage.TopologicalNode ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "SvVoltage must reference exactly one TopologicalNode." ;
+    ] ;
+
+    sh:property [
+        sh:path            cim:SvVoltage.v ;
+        sh:minCount        1 ;
+        sh:datatype        xsd:float ;
+        sh:minExclusive    0 ;
+        sh:severity        sh:Violation ;
+        sh:message         "SvVoltage.v must be a positive number (kV)." ;
+    ] ;
+
+    sh:property [
+        sh:path        cim:SvVoltage.angle ;
+        sh:minCount    1 ;
+        sh:datatype    xsd:float ;
+        sh:severity    sh:Violation ;
+        sh:message     "SvVoltage.angle must be present (degrees)." ;
+    ] .
+
+
+# ===========================================================================
+# 13.  SvPowerFlow — must reference a Terminal
+# ===========================================================================
+
+<#SvPowerFlowShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:SvPowerFlow ;
+    sh:name "SvPowerFlowShape" ;
+
+    sh:property [
+        sh:path        cim:SvPowerFlow.Terminal ;
+        sh:minCount    1 ;
+        sh:maxCount    1 ;
+        sh:severity    sh:Violation ;
+        sh:message     "SvPowerFlow must reference exactly one Terminal." ;
+    ] .
+
+
+# ===========================================================================
+# SPARQL Referential-Integrity Constraints (Task 2b)
+#
+# These shapes require pyshacl with SPARQL support.  The validator must merge
+# the EQ and SSH graphs into a single data graph before calling pyshacl so
+# that cross-profile references can be resolved by the SPARQL engine.
+#
+# Usage:
+#   merged = eq_graph + ssh_graph + tp_graph
+#   pyshacl.validate(merged, shacl_graph=shapes_graph, ...)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Shared prefix declarations block (referenced by sh:prefixes below)
+# ---------------------------------------------------------------------------
+
+<#CimPrefixes>
+    a sh:PrefixDeclaration ;
+    sh:declare [
+        sh:prefix    "cim" ;
+        sh:namespace "http://iec.ch/TC57/CIM100#"^^xsd:anyURI ;
+    ] ;
+    sh:declare [
+        sh:prefix    "rdf" ;
+        sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ;
+    ] ;
+    sh:declare [
+        sh:prefix    "xsd" ;
+        sh:namespace "http://www.w3.org/2001/XMLSchema#"^^xsd:anyURI ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 14.  Terminal.ConnectivityNode referential integrity
+#      Every CN reference must resolve to an actual cim:ConnectivityNode.
+# ---------------------------------------------------------------------------
+
+<#TerminalCNExistsShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:Terminal ;
+    sh:name "TerminalCNExistsShape" ;
+    sh:description "Terminal.ConnectivityNode must resolve to an existing ConnectivityNode." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "Terminal.ConnectivityNode references a node that does not exist as cim:ConnectivityNode in the graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:Terminal.ConnectivityNode ?cn .
+                FILTER NOT EXISTS { ?cn a cim:ConnectivityNode }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 15.  Terminal.ConductingEquipment referential integrity
+# ---------------------------------------------------------------------------
+
+<#TerminalCEExistsShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:Terminal ;
+    sh:name "TerminalCEExistsShape" ;
+    sh:description "Terminal.ConductingEquipment must resolve to a known ConductingEquipment." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "Terminal.ConductingEquipment references an object with no rdf:type in the graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:Terminal.ConductingEquipment ?ce .
+                FILTER NOT EXISTS { ?ce rdf:type ?anyType }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 16.  SvVoltage.TopologicalNode referential integrity
+# ---------------------------------------------------------------------------
+
+<#SvVoltageRefShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:SvVoltage ;
+    sh:name "SvVoltageRefShape" ;
+    sh:description "SvVoltage.TopologicalNode must resolve to a known TopologicalNode." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "SvVoltage.TopologicalNode references a node that is not a cim:TopologicalNode." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:SvVoltage.TopologicalNode ?tn .
+                FILTER NOT EXISTS { ?tn a cim:TopologicalNode }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 17.  SvPowerFlow.Terminal referential integrity
+# ---------------------------------------------------------------------------
+
+<#SvPowerFlowRefShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:SvPowerFlow ;
+    sh:name "SvPowerFlowRefShape" ;
+    sh:description "SvPowerFlow.Terminal must resolve to a known Terminal." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "SvPowerFlow.Terminal references a node that is not a cim:Terminal." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:SvPowerFlow.Terminal ?t .
+                FILTER NOT EXISTS { ?t a cim:Terminal }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 18.  SSH Switch.open — EQ-SSH cross-profile referential integrity
+#      Every subject of cim:Switch.open must exist as a Switch in EQ.
+#      Requires EQ+SSH merged graph.
+# ---------------------------------------------------------------------------
+
+<#SSHSwitchExistsInEQShape>
+    a sh:NodeShape ;
+    sh:targetSubjectsOf cim:Switch.open ;
+    sh:name "SSHSwitchExistsInEQShape" ;
+    sh:description "Every SSH Switch.open override must correspond to a Switch in the EQ graph." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Warning ;
+        sh:message "SSH Switch.open override references an object not typed as a Switch sub-class in the merged graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:Switch.open ?open .
+                FILTER NOT EXISTS {
+                    { $this a cim:Breaker }
+                    UNION { $this a cim:Disconnector }
+                    UNION { $this a cim:LoadBreakSwitch }
+                    UNION { $this a cim:Fuse }
+                }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 19.  SSH TapChanger.step — EQ-SSH cross-profile referential integrity
+# ---------------------------------------------------------------------------
+
+<#SSHTapStepExistsInEQShape>
+    a sh:NodeShape ;
+    sh:targetSubjectsOf cim:TapChanger.step ;
+    sh:name "SSHTapStepExistsInEQShape" ;
+    sh:description "Every SSH TapChanger.step override must correspond to a TapChanger in EQ." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Warning ;
+        sh:message "SSH TapChanger.step references an object not typed as cim:RatioTapChanger in the merged graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:TapChanger.step ?step .
+                FILTER NOT EXISTS { $this a cim:RatioTapChanger }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 20.  AnalogValue.Analog referential integrity
+#      Every AnalogValue must reference an Analog that exists in the EQ graph.
+# ---------------------------------------------------------------------------
+
+<#AnalogValueRefShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:AnalogValue ;
+    sh:name "AnalogValueRefShape" ;
+    sh:description "AnalogValue.Analog must resolve to a known cim:Analog." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "AnalogValue.Analog references an object that is not a cim:Analog in the merged graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:AnalogValue.Analog ?a .
+                FILTER NOT EXISTS { ?a a cim:Analog }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 21.  ConnectivityNode container referential integrity
+# ---------------------------------------------------------------------------
+
+<#CNContainerExistsShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:ConnectivityNode ;
+    sh:name "CNContainerExistsShape" ;
+    sh:description "ConnectivityNode.ConnectivityNodeContainer must resolve to an existing container." ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "ConnectivityNode references a ConnectivityNodeContainer that has no rdf:type in the graph." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:ConnectivityNode.ConnectivityNodeContainer ?c .
+                FILTER NOT EXISTS { ?c rdf:type ?anyType }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# 22.  PowerTransformerEnd — transformer and terminal referential integrity
+# ---------------------------------------------------------------------------
+
+<#TransformerEndRefShape>
+    a sh:NodeShape ;
+    sh:targetClass cim:PowerTransformerEnd ;
+    sh:name "TransformerEndRefShape" ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "PowerTransformerEnd.PowerTransformer references an object that is not a cim:PowerTransformer." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:PowerTransformerEnd.PowerTransformer ?pt .
+                FILTER NOT EXISTS { ?pt a cim:PowerTransformer }
+            }
+        """ ;
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:severity sh:Violation ;
+        sh:message "PowerTransformerEnd.Terminal references an object that is not a cim:Terminal." ;
+        sh:prefixes <#CimPrefixes> ;
+        sh:select """
+            SELECT $this WHERE {
+                $this cim:TransformerEnd.Terminal ?t .
+                FILTER NOT EXISTS { ?t a cim:Terminal }
+            }
+        """ ;
+    ] .

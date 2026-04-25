@@ -1,0 +1,2 @@
+ext_grid_id,name,bus,vm_pu,va_degree,in_service
+1,SLACK_BUS1,1,1.04,0.0,True
